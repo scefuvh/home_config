@@ -1,0 +1,605 @@
+# Author:hhz
+# Some small useful functions I use.
+
+
+function quote
+{
+    if [ ${USER} = "hhz" ]
+    then
+        PROVERB_CNT=7
+        random_number=${RANDOM}
+        if [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 1 ] ]
+        then
+            echo "尽管注定饱受摧残伤痕累累, 我也要尽我所能, 认真清醒地度过每一天."
+            echo "在那不可改变的最终结局到来前, 我会徒劳却坚定地抵抗下去, 一如世间万物."
+        elif [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 2 ] ]
+        then
+            echo "世间只有一种英雄主义, 就是在认清生活的真相后, 依然热爱它."
+        elif [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 3 ] ]
+        then
+            echo "你没有倾国的容貌, 没有显赫的家庭, 没有出人的才华. 你唯一拥有的只有你自己."
+            echo "所以请变成一名真正的黑客, 不管这意味着什么, 来保护你珍视的人免遭这残酷世界的伤害."
+        elif [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 4 ] ]
+        then
+            echo "你的性格与体质注定不能适应这个时代. 请心安理得地被时代抛弃."
+        elif [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 5 ] ]
+        then
+            echo "The quieter 1 becomes, the more 1 is able to hear."
+        elif [ $[ ${random_number} % ${PROVERB_CNT} ] -eq $[ ${PROVERB_CNT} - 6 ] ]
+        then
+            echo "Ludwig Boltzman, who spent much of his life studying statistical mechanics, died in 1906, by his own hand. Paul Ehrenfest, carrying on the work, died similarly in 1933. Now it is our turn to study statistical mechanics. Perhaps it will be wise to approach the subject cautiously."
+        else
+            echo "
+            I solemnly swear, to devote my life and abilities,
+            In defense of the United Nation of Neurons.
+            To defend the freedom of hhz,
+            And to further the universal rights of all his close people.
+            From the depths of the Pacific,
+            To the edge of the galaxy.
+            For as long,
+            As I shall live.
+            "
+        fi
+    elif [ ${USER} = "root" ]
+    then
+        echo "With the great power comes the great responsibility."
+        echo "Plese think twice before any operation."
+    elif [ ${USER} = "guest" ]
+    then
+        echo "Hi, What can I help?"
+        echo "Please do not do anything harmful."
+    else
+        echo "What are you up to?"
+        echo "Get the hell out of my computer!"
+    fi
+}
+
+function paclist
+{
+    # Source: https://bbs.archlinux.org/viewtopic.php?id=93683
+    LC_ALL=C pacman -Qei $(pacman -Qu | cut -d " " -f 1) | \
+      awk 'BEGIN {FS=":"} /^Name/{printf("\033[1;36m%s\033[1;37m", $2)} /^Description/{print $2}'
+}
+
+
+function pacdisowned
+{
+    local tmp db fs
+    tmp=${TMPDIR-/tmp}/pacman-disowned-$UID-$$
+    db=$tmp/db
+    fs=$tmp/fs
+
+    mkdir "$tmp"
+    trap 'rm -rf "$tmp"' EXIT
+
+    pacman -Qlq | sort -u > "$db"
+
+    find /bin /etc /lib /sbin /usr ! -name lost+found \
+      \( -type d -printf '%p/\n' -o -print \) | sort > "$fs"
+
+    comm -23 "$fs" "$db"
+}
+
+
+function pacmanallkeys
+{
+    curl -s https://www.archlinux.org/people/{developers,trustedusers}/ | \
+      awk -F\" '(/pgp.mit.edu/) { sub(/.*search=0x/,""); print $1}' | \
+      xargs sudo pacman-key --recv-keys
+}
+
+
+function pacmansignkeys
+{
+    local key
+    for key in $@; do
+      sudo pacman-key --recv-keys $key
+      sudo pacman-key --lsign-key $key
+      printf 'trust\n3\n' | sudo gpg --homedir /etc/pacman.d/gnupg \
+        --no-permission-warning --command-fd 0 --edit-key $key
+    done
+}
+
+
+if (( $+commands[xdg-open] )); then
+function pacweb
+{
+      local pkg="$1"
+      local infos="$(LANG=C pacman -Si "$pkg")"
+      if [[ -z "$infos" ]]; then
+        return
+      fi
+      local repo="$(grep -m 1 '^Repo' <<< "$infos" | grep -oP '[^ ]+$')"
+      local arch="$(grep -m 1 '^Arch' <<< "$infos" | grep -oP '[^ ]+$')"
+      xdg-open "https://www.archlinux.org/packages/$repo/$arch/$pkg/" &>/dev/null
+}
+fi
+
+
+function zsh_stats
+{
+    fc -l 1 \
+      | awk '{ CMD[$2]++; count++; } END { for (a in CMD) print CMD[a] " " CMD[a]*100/count "% " a }' \
+      | grep -v "./" | sort -nr | head -n20 | column -c3 -s " " -t | nl
+}
+
+
+command_not_found_handler()
+{
+    local pkgs cmd="$1"
+
+    pkgs=(${(f)"$(pkgfile -b -v -- "$cmd" 2>/dev/null)"})
+    if [[ -n "$pkgs" ]]; then
+    printf '%s may be found in the following packages:\n' "$cmd"
+    printf '  %s\n' $pkgs[@]
+    else
+    printf 'zsh: command not found: %s\n' "$cmd"
+    fi 1>&2
+
+    return 127
+}
+
+
+function diagnostic_dump() {
+  emulate -L zsh
+
+  builtin echo "Generating diagnostic dump; please be patient..."
+
+  local thisfcn=diagnostic_dump
+  local -A opts
+  local opt_verbose opt_noverbose opt_outfile
+  local timestamp=$(date +%Y%m%d-%H%M%S)
+  local outfile=diagdump_$timestamp.txt
+  builtin zparseopts -A opts -D -- "v+=opt_verbose" "V+=opt_noverbose"
+  local verbose n_verbose=${#opt_verbose} n_noverbose=${#opt_noverbose}
+  (( verbose = 1 + n_verbose - n_noverbose ))
+
+  if [[ ${#*} > 0 ]]; then
+    opt_outfile=$1
+  fi
+  if [[ ${#*} > 1 ]]; then
+    builtin echo "$thisfcn: error: too many arguments" >&2
+    return 1
+  fi
+  if [[ -n "$opt_outfile" ]]; then
+    outfile="$opt_outfile"
+  fi
+
+  # Always write directly to a file so terminal escape sequences are
+  # captured cleanly
+  _diag_dump_one_big_text &> "$outfile"
+  if [[ $? != 0 ]]; then
+    builtin echo "$thisfcn: error while creating diagnostic dump; see $outfile for details"
+  fi
+
+  builtin echo
+  builtin echo Diagnostic dump file created at: "$outfile"
+  builtin echo
+  builtin echo To share this with OMZ developers, post it as a gist on GitHub
+  builtin echo at "https://gist.github.com" and share the link to the gist.
+  builtin echo
+  builtin echo "WARNING: This dump file contains all your zsh and omz configuration files,"
+  builtin echo "so don't share it publicly if there's sensitive information in them."
+  builtin echo
+
+}
+
+function _diag_dump_one_big_text() {
+  local program programs progfile md5
+
+  builtin echo
+  builtin echo $outfile
+  builtin echo
+
+  # Basic system and zsh information
+  command date
+  command uname -a
+  builtin echo OSTYPE=$OSTYPE
+  builtin echo ZSH_VERSION=$ZSH_VERSION
+  builtin echo User: $USER
+  builtin echo umask: $(umask)
+  builtin echo
+  _diag_dump_os_specific_version
+  builtin echo
+
+  # Installed programs
+  programs=(sh zsh ksh bash sed cat grep ls find git posh)
+  local progfile="" extra_str="" sha_str=""
+  for program in $programs; do
+    extra_str="" sha_str=""
+    progfile=$(builtin which $program)
+    if [[ $? == 0 ]]; then
+      if [[ -e $progfile ]]; then
+        if builtin whence shasum &>/dev/null; then
+          sha_str=($(command shasum $progfile))
+          sha_str=$sha_str[1]
+          extra_str+=" SHA $sha_str"
+        fi
+        if [[ -h "$progfile" ]]; then
+          extra_str+=" ( -> ${progfile:A} )"
+        fi
+      fi
+      builtin printf '%-9s %-20s %s\n' "$program is" "$progfile" "$extra_str"
+    else
+      builtin echo "$program: not found"
+    fi
+  done
+  builtin echo
+  builtin echo Command Versions:
+  builtin echo "zsh: $(zsh --version)"
+  builtin echo "this zsh session: $ZSH_VERSION"
+  builtin echo "bash: $(bash --version | command grep bash)"
+  builtin echo "git: $(git --version)"
+  builtin echo "grep: $(grep --version)"
+  builtin echo
+
+  # Core command definitions
+  _diag_dump_check_core_commands || return 1
+  builtin echo
+
+  # ZSH Process state
+  builtin echo Process state:
+  builtin echo pwd: $PWD
+  if builtin whence pstree &>/dev/null; then
+    builtin echo Process tree for this shell:
+    pstree -p $$
+  else
+    ps -fT
+  fi
+  builtin set | command grep -a '^\(ZSH\|plugins\|TERM\|LC_\|LANG\|precmd\|chpwd\|preexec\|FPATH\|TTY\|DISPLAY\|PATH\)\|OMZ'
+  builtin echo
+  #TODO: Should this include `env` instead of or in addition to `export`?
+  builtin echo Exported:
+  builtin echo $(builtin export | command sed 's/=.*//')
+  builtin echo
+  builtin echo Locale:
+  command locale
+  builtin echo
+
+  # Zsh installation and configuration
+  builtin echo Zsh configuration:
+  builtin echo setopt: $(builtin setopt)
+  builtin echo
+  builtin echo zstyle:
+  builtin zstyle
+  builtin echo
+  builtin echo 'compaudit output:'
+  compaudit
+  builtin echo
+  builtin echo '$fpath directories:'
+  command ls -lad $fpath
+  builtin echo
+
+  command ls -ld ~/.z*
+
+  # Key binding and terminal info
+  if [[ $verbose -ge 1 ]]; then
+    builtin echo "bindkey:"
+    builtin bindkey
+    builtin echo
+    builtin echo "infocmp:"
+    command infocmp -L
+    builtin echo
+  fi
+
+  # Configuration file info
+  local zdotdir=${ZDOTDIR:-$HOME}
+  builtin echo "Zsh configuration files:"
+  local cfgfile cfgfiles
+  # Some files for bash that zsh does not use are intentionally included
+  # to help with diagnosing behavior differences between bash and zsh
+  cfgfiles=( /etc/zshenv /etc/zprofile /etc/zshrc /etc/zlogin /etc/zlogout
+    $zdotdir/.zshenv $zdotdir/.zprofile $zdotdir/.zshrc $zdotdir/.zlogin $zdotdir/.zlogout
+    /etc/bashrc /etc/profile ~/.bashrc ~/.profile ~/.bash_profile ~/.bash_logout )
+  command ls -lad $cfgfiles 2>&1
+  builtin echo
+  if [[ $verbose -ge 1 ]]; then
+    for cfgfile in $cfgfiles; do
+      _diag_dump_echo_file_w_header $cfgfile
+    done
+  fi
+  builtin echo
+  builtin echo "Zsh compdump files:"
+  local dumpfile dumpfiles
+  command ls -lad $zdotdir/.zcompdump*
+  dumpfiles=( $zdotdir/.zcompdump*(N) )
+  if [[ $verbose -ge 2 ]]; then
+    for dumpfile in $dumpfiles; do
+      _diag_dump_echo_file_w_header $dumpfile
+    done
+  fi
+
+}
+
+function _diag_dump_check_core_commands() {
+  builtin echo "Core command check:"
+  local redefined name builtins externals reserved_words
+  redefined=()
+  # All the zsh non-module builtin commands
+  # These are taken from the zsh reference manual for 5.0.2
+  # Commands from modules should not be included.
+  # (For back-compatibility, if any of these are newish, they should be removed,
+  # or at least made conditional on the version of the current running zsh.)
+  # "history" is also excluded because OMZ is known to redefine that
+  reserved_words=( do done esac then elif else fi for case if while function
+    repeat time until select coproc nocorrect foreach end '!' '[[' '{' '}'
+    )
+  builtins=( alias autoload bg bindkey break builtin bye cd chdir command
+    comparguments compcall compctl compdescribe compfiles compgroups compquote comptags
+    comptry compvalues continue dirs disable disown echo echotc echoti emulate
+    enable eval exec exit false fc fg functions getln getopts hash
+    jobs kill let limit log logout noglob popd print printf
+    pushd pushln pwd r read rehash return sched set setopt shift
+    source suspend test times trap true ttyctl type ulimit umask unalias
+    unfunction unhash unlimit unset unsetopt vared wait whence where which zcompile
+    zle zmodload zparseopts zregexparse zstyle )
+  if is-at-least 5.1; then
+    reserved_word+=( declare export integer float local readonly typeset )
+  else
+    builtins+=( declare export integer float local readonly typeset )
+  fi
+  builtins_fatal=( builtin command local )
+  externals=( zsh )
+  for name in $reserved_words; do
+    if [[ $(builtin whence -w $name) != "$name: reserved" ]]; then
+      builtin echo "reserved word '$name' has been redefined"
+      builtin which $name
+      redefined+=$name
+    fi
+  done
+  for name in $builtins; do
+    if [[ $(builtin whence -w $name) != "$name: builtin" ]]; then
+      builtin echo "builtin '$name' has been redefined"
+      builtin which $name
+      redefined+=$name
+    fi
+  done
+  for name in $externals; do
+    if [[ $(builtin whence -w $name) != "$name: command" ]]; then
+      builtin echo "command '$name' has been redefined"
+      builtin which $name
+      redefined+=$name
+    fi
+  done
+
+  if [[ -n "$redefined" ]]; then
+    builtin echo "SOME CORE COMMANDS HAVE BEEN REDEFINED: $redefined"
+  else
+    builtin echo "All core commands are defined normally"
+  fi
+
+}
+
+function _diag_dump_echo_file_w_header() {
+  local file=$1
+  if [[ ( -f $file || -h $file ) ]]; then
+    builtin echo "========== $file =========="
+    if [[ -h $file ]]; then
+      builtin echo "==========    ( => ${file:A} )   =========="
+    fi
+    command cat $file
+    builtin echo "========== end $file =========="
+    builtin echo
+  elif [[ -d $file ]]; then
+    builtin echo "File '$file' is a directory"
+  elif [[ ! -e $file ]]; then
+    builtin echo "File '$file' does not exist"
+  else
+    command ls -lad "$file"
+  fi
+}
+
+function _diag_dump_os_specific_version() {
+  local osname osver version_file version_files
+  case "$OSTYPE" in
+    darwin*)
+      osname=$(command sw_vers -productName)
+      osver=$(command sw_vers -productVersion)
+      builtin echo "OS Version: $osname $osver build $(sw_vers -buildVersion)"
+      ;;
+    cygwin)
+      command systeminfo | command head -4 | command tail -2
+      ;;
+  esac
+
+  if builtin which lsb_release >/dev/null; then
+    builtin echo "OS Release: $(command lsb_release -s -d)"
+  fi
+
+  version_files=( /etc/*-release(N) /etc/*-version(N) /etc/*_version(N) )
+  for version_file in $version_files; do
+    builtin echo "$version_file:"
+    command cat "$version_file"
+    builtin echo
+  done
+}
+
+
+
+# URL-encode a string
+#
+# Encodes a string using RFC 2396 URL-encoding (%-escaped).
+# See: https://www.ietf.org/rfc/rfc2396.txt
+#
+# By default, reserved characters and unreserved "mark" characters are
+# not escaped by this function. This allows the common usage of passing
+# an entire URL in, and encoding just special characters in it, with
+# the expectation that reserved and mark characters are used appropriately.
+# The -r and -m options turn on escaping of the reserved and mark characters,
+# respectively, which allows arbitrary strings to be fully escaped for
+# embedding inside URLs, where reserved characters might be misinterpreted.
+#
+# Prints the encoded string on stdout.
+# Returns nonzero if encoding failed.
+#
+# Usage:
+#  omz_urlencode [-r] [-m] [-P] <string>
+#
+#    -r causes reserved characters (;/?:@&=+$,) to be escaped
+#
+#    -m causes "mark" characters (_.!~*''()-) to be escaped
+#
+#    -P causes spaces to be encoded as '%20' instead of '+'
+function omz_urlencode() {
+  emulate -L zsh
+  local -a opts
+  zparseopts -D -E -a opts r m P
+
+  local in_str=$1
+  local url_str=""
+  local spaces_as_plus
+  if [[ -z $opts[(r)-P] ]]; then spaces_as_plus=1; fi
+  local str="$in_str"
+
+  # URLs must use UTF-8 encoding; convert str to UTF-8 if required
+  local encoding=$langinfo[CODESET]
+  local safe_encodings
+  safe_encodings=(UTF-8 utf8 US-ASCII)
+  if [[ -z ${safe_encodings[(r)$encoding]} ]]; then
+    str=$(echo -E "$str" | iconv -f $encoding -t UTF-8)
+    if [[ $? != 0 ]]; then
+      echo "Error converting string from $encoding to UTF-8" >&2
+      return 1
+    fi
+  fi
+
+  # Use LC_CTYPE=C to process text byte-by-byte
+  local i byte ord LC_ALL=C
+  export LC_ALL
+  local reserved=';/?:@&=+$,'
+  local mark='_.!~*''()-'
+  local dont_escape="[A-Za-z0-9"
+  if [[ -z $opts[(r)-r] ]]; then
+    dont_escape+=$reserved
+  fi
+  # $mark must be last because of the "-"
+  if [[ -z $opts[(r)-m] ]]; then
+    dont_escape+=$mark
+  fi
+  dont_escape+="]"
+
+  # Implemented to use a single printf call and avoid subshells in the loop,
+  # for performance (primarily on Windows).
+  local url_str=""
+  for (( i = 1; i <= ${#str}; ++i )); do
+    byte="$str[i]"
+    if [[ "$byte" =~ "$dont_escape" ]]; then
+      url_str+="$byte"
+    else
+      if [[ "$byte" == " " && -n $spaces_as_plus ]]; then
+        url_str+="+"
+      else
+        ord=$(( [##16] #byte ))
+        url_str+="%$ord"
+      fi
+    fi
+  done
+  echo -E "$url_str"
+}
+
+# URL-decode a string
+#
+# Decodes a RFC 2396 URL-encoded (%-escaped) string.
+# This decodes the '+' and '%' escapes in the input string, and leaves
+# other characters unchanged. Does not enforce that the input is a
+# valid URL-encoded string. This is a convenience to allow callers to
+# pass in a full URL or similar strings and decode them for human
+# presentation.
+#
+# Outputs the encoded string on stdout.
+# Returns nonzero if encoding failed.
+#
+# Usage:
+#   omz_urldecode <urlstring>  - prints decoded string followed by a newline
+function omz_urldecode {
+  emulate -L zsh
+  local encoded_url=$1
+
+  # Work bytewise, since URLs escape UTF-8 octets
+  local caller_encoding=$langinfo[CODESET]
+  local LC_ALL=C
+  export LC_ALL
+
+  # Change + back to ' '
+  local tmp=${encoded_url:gs/+/ /}
+  # Protect other escapes to pass through the printf unchanged
+  tmp=${tmp:gs/\\/\\\\/}
+  # Handle %-escapes by turning them into `\xXX` printf escapes
+  tmp=${tmp:gs/%/\\x/}
+  local decoded
+  eval "decoded=\$'$tmp'"
+
+  # Now we have a UTF-8 encoded string in the variable. We need to re-encode
+  # it if caller is in a non-UTF-8 locale.
+  local safe_encodings
+  safe_encodings=(UTF-8 utf8 US-ASCII)
+  if [[ -z ${safe_encodings[(r)$caller_encoding]} ]]; then
+    decoded=$(echo -E "$decoded" | iconv -f UTF-8 -t $caller_encoding)
+    if [[ $? != 0 ]]; then
+      echo "Error converting string from UTF-8 to $caller_encoding" >&2
+      return 1
+    fi
+  fi
+
+  echo -E "$decoded"
+}
+
+function h
+{
+    # R/W history on my willingness.
+    # Read new history records.
+    fc -IR
+    # Write history records.
+    fc -IA
+}
+
+phone-push()
+{
+    adb push "$@" /sdcard/Download/
+}
+
+function lock_screen
+{
+    i3lock -i /usr/share/wallpapers/lock/lock.png -e -t -p win -u --insidevercolor=17F62Bff --insidewrongcolor=FF0000ff --insidecolor=1E8AE8ff --ringvercolor=4CE200ff --ringwrongcolor=FF0000ff --ringcolor=1E8AE8ff
+}
+
+function en_puncts
+{
+    echo '℃  Celsius system 摄氏度
+{ open brace, opencurly 左花括号
+ } close brace, close curly 右花括号
+( open parenthesis, open paren 左圆括号
+ ) close parenthesis, close paren 右圆括号
+() brakets/ parentheses 括号
+[ open bracket 左方括号
+ ] close bracket 右方括号z
+[] square brackets 方括号
+. period, dot 句号，点
+| vertical bar, vertical virgule 竖线
+& ampersand, and, reference, ref 和，引用
+* asterisk, multiply, star, pointer 星号，乘号，星，指针
+/ slash, divide, oblique 斜线，斜杠，除号
+// slash-slash, comment 双斜线，注释符
+\# pound 井号
+\ backslash, sometimes escape 反斜线转义符，有时表示转义符或续行符
+~ tilde 波浪符
+. full stop 句号
+, comma 逗号
+: colon 冒号
+; semicolon 分号
+? question mark 问号
+! exclamation mark (英式英语) exclamation point (美式英语)
+'"'"' apostrophe 撇号
+- hyphen 连字号
+-- dash 破折号
+... dots/ ellipsis 省略号
+" single quotation marks 单引号
+"" double quotation marks 双引号
+‖ parallel 双线号
+& ampersand = and
+～ swung dash 代字号
+§ section; division 分节号
+→ arrow 箭号;参见号 '
+}
+
+source ~/.bash_functions
