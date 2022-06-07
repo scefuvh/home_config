@@ -43,6 +43,11 @@ function zinit_load()
     zinit snippet OMZ::plugins/pip
 }
 
+if ! [ -f ~/.local/share/zinit/zinit.git ]
+then
+    bash -c "$(curl --fail --show-error --silent --location https://raw.githubusercontent.com/zdharma-continuum/zinit/HEAD/scripts/install.sh)"
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -245,3 +250,18 @@ bindkey -e
 
 
 source ~/.zsh_functions
+
+if [ -f ~/.zsh_profile ]
+then
+    source ~/.zsh_profile
+fi
+
+# Load a few important annexes, without Turbo
+# (this is currently required for annexes)
+zinit light-mode for \
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
+
+### End of Zinit's installer chunk
