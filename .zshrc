@@ -39,13 +39,29 @@ function zinit_load()
     zinit ice mv=":zsh -> _cht" as="completion"
     zinit snippet https://cheat.sh/:zsh
 
-    zinit ice svn
-    zinit snippet OMZ::plugins/pip
+    if [ -f /usr/bin/svn ]
+    then
+        zinit ice svn
+        zinit snippet OMZ::plugins/pip
+else
+	echo "Install subversion!"
+    fi
+
+    zinit light-mode for \
+        zdharma-continuum/zinit-annex-as-monitor \
+        zdharma-continuum/zinit-annex-bin-gem-node \
+        zdharma-continuum/zinit-annex-patch-dl \
+
 }
 
 if ! [ -f ~/.local/share/zinit/zinit.git ]
 then
     bash -c "$(curl --fail --show-error --silent --location https://raw.githubusercontent.com/zdharma-continuum/zinit/HEAD/scripts/install.sh)"
+fi
+
+if ! [ -f /usr/bin/envsubst ]
+then
+	echo "Install gettext!"
 fi
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
@@ -173,14 +189,6 @@ source "$HOME/.zinit/bin/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
-# Load a few important annexes, without Turbo
-# (this is currently required for annexes)
-zinit light-mode for \
-    zinit-zsh/z-a-rust \
-    zinit-zsh/z-a-as-monitor \
-    zinit-zsh/z-a-patch-dl \
-    zinit-zsh/z-a-bin-gem-node
-
 ### End of Zinit's installer chunk
 
 zinit_load
@@ -256,12 +264,3 @@ then
     source ~/.zsh_profile
 fi
 
-# Load a few important annexes, without Turbo
-# (this is currently required for annexes)
-zinit light-mode for \
-    zdharma-continuum/zinit-annex-as-monitor \
-    zdharma-continuum/zinit-annex-bin-gem-node \
-    zdharma-continuum/zinit-annex-patch-dl \
-    zdharma-continuum/zinit-annex-rust
-
-### End of Zinit's installer chunk
