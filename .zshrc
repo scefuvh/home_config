@@ -169,6 +169,7 @@ alias wiki='wiki-search-html'
 alias ls='ls --color=auto'
 alias e='feh /home/hhz/temp/exams.png'
 alias z='vim /home/hhz/syncthing/local_sync/便签.md'
+alias umnt='sudo umount /mnt'
 
 # Turn off the beep
 if [ "${TERM}" = "linux" ]
@@ -264,3 +265,13 @@ then
     source ~/.zsh_profile
 fi
 
+
+# Load a few important annexes, without Turbo
+# (this is currently required for annexes)
+zinit light-mode for \
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
+
+### End of Zinit's installer chunk
