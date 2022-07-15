@@ -3,3 +3,5 @@
 	name = Alex Hu
 [advice]
 	useCoreFSMonitorConfig = false
+[pull]
+	rebase = false

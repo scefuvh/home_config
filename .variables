@@ -1,3 +1,35 @@
+export HASWINDOWS=0
+export HASLINUX=0
+export HASMACOS=0
+case $OSTYPE in
+    darwin*)
+        echo "MAC OS Detected."
+        export HASMACOS=1
+    ;;
+    linux*)
+        echo "Linux Detected."
+        export HASLINUX=1
+    ;;
+    win*)
+        echo "Windows Detected."
+        export HASWINDOWS=1
+    ;;
+    msys*)
+        echo "MSYS Detected."
+        export HASLINUX=1
+    ;;
+    cygwin*)
+        echo "Cygwin Detected."
+        export HASLINUX=1
+    ;;
+esac
+
+if [ $HASMACOS -eq 1 ]
+then
+    export PATH="/opt/homebrew/bin:${PATH}"
+fi
+
+export PATH=".:${PATH}"
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS="@im=fcitx"
