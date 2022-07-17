@@ -9,3 +9,5 @@
 !.gitignore
 !.gitconfig
 !.p10k.zsh
+!.yarnrc
+!.npmrc
