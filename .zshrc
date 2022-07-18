@@ -277,3 +277,6 @@ zinit light-mode for \
 
 ### End of Zinit's installer chunk
 ### End of Zinit's installer chunk
+
+# Disable instant prompt error message.
+typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
