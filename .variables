@@ -1,25 +1,21 @@
 export HASWINDOWS=0
 export HASLINUX=0
 export HASMACOS=0
+export HASMSYS=0
 case $OSTYPE in
     darwin*)
-        echo "MAC OS Detected."
         export HASMACOS=1
     ;;
     linux*)
-        echo "Linux Detected."
         export HASLINUX=1
     ;;
     win*)
-        echo "Windows Detected."
         export HASWINDOWS=1
     ;;
     msys*)
-        echo "MSYS Detected."
-        export HASLINUX=1
+        export HASMSYS=1
     ;;
     cygwin*)
-        echo "Cygwin Detected."
         export HASLINUX=1
     ;;
 esac
@@ -37,3 +33,11 @@ export LC_CTYPE="zh_CN.UTF-8"
 export ADVANCED_VIM=1
 export EDITOR=nvim
 export PAGER=nvim
+
+if [ $HASMSYS -eq 1]
+then
+    export JAVA_HOME='D:\usr\share\java\jdk\'
+    export EDITOR='C:\usr\share\Neovim\bin\nvim.exe'
+    export PAGER='C:\usr\share\Neovim\bin\nvim.exe'
+fi
+
