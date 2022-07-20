@@ -558,6 +558,11 @@ phone-push()
     adb push "$@" /sdcard/Download/
 }
 
+phone-pull()
+{
+    adb pull /sdcard/Download .
+}
+
 function lock_screen
 {
     i3lock -i /usr/share/wallpapers/lock/lock.png -e -t -p win -u --insidevercolor=17F62Bff --insidewrongcolor=FF0000ff --insidecolor=1E8AE8ff --ringvercolor=4CE200ff --ringwrongcolor=FF0000ff --ringcolor=1E8AE8ff
