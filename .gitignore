@@ -1,4 +1,7 @@
-*
+/*
+!.gradle
+.gradle/*
+!.gradle/init.gradle
 !.zshrc
 !.zsh_functions
 !.variables
@@ -9,3 +12,8 @@
 !.gitignore
 !.gitconfig
 !.p10k.zsh
+!.yarnrc
+!.npmrc
+!.m2
+.m2/*
+!.m2/settings.xml

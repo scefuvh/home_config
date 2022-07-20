@@ -1,3 +1,31 @@
+export HASWINDOWS=0
+export HASLINUX=0
+export HASMACOS=0
+export HASMSYS=0
+case $OSTYPE in
+    darwin*)
+        export HASMACOS=1
+    ;;
+    linux*)
+        export HASLINUX=1
+    ;;
+    win*)
+        export HASWINDOWS=1
+    ;;
+    msys*)
+        export HASMSYS=1
+    ;;
+    cygwin*)
+        export HASLINUX=1
+    ;;
+esac
+
+if [ $HASMACOS -eq 1 ]
+then
+    export PATH="/opt/homebrew/bin:${PATH}"
+fi
+
+export PATH=".:${PATH}"
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS="@im=fcitx"
@@ -5,3 +33,11 @@ export LC_CTYPE="zh_CN.UTF-8"
 export ADVANCED_VIM=1
 export EDITOR=nvim
 export PAGER=nvim
+
+if [ $HASMSYS -eq 1 ]
+then
+    export JAVA_HOME='D:\usr\share\java\jdk\'
+    export EDITOR='C:\usr\share\Neovim\bin\nvim.exe'
+    export PAGER='C:\usr\share\Neovim\bin\nvim.exe'
+fi
+
