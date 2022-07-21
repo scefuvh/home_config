@@ -1,3 +1,5 @@
+source ~/.variables
+
 function zinit_load()
 {
     zinit ice depth=1
@@ -39,12 +41,12 @@ function zinit_load()
     zinit ice mv=":zsh -> _cht" as="completion"
     zinit snippet https://cheat.sh/:zsh
 
-    if [ -f /usr/bin/svn ]
+    if where svn > /dev/null
     then
         zinit ice svn
         zinit snippet OMZ::plugins/pip
-else
-	echo "Install subversion!"
+    else
+        echo "Install subversion!"
     fi
 
     zinit light-mode for \
@@ -59,19 +61,12 @@ then
     bash -c "$(curl --fail --show-error --silent --location https://raw.githubusercontent.com/zdharma-continuum/zinit/HEAD/scripts/install.sh)"
 fi
 
-if ! [ -f /usr/bin/envsubst ]
-then
-	echo "Install gettext!"
-fi
-
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-
-source ~/.variables
 
 # Disable insecure directory check
 export ZSH_DISABLE_COMPFIX=true
@@ -191,8 +186,6 @@ source "$HOME/.zinit/bin/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
-### End of Zinit's installer chunk
-
 zinit_load
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -259,14 +252,6 @@ bindkey "^[m" copy-prev-shell-word
 bindkey -e
 
 
-source ~/.zsh_functions
-
-if [ -f ~/.zsh_profile ]
-then
-    source ~/.zsh_profile
-fi
-
-
 # Load a few important annexes, without Turbo
 # (this is currently required for annexes)
 zinit light-mode for \
@@ -275,12 +260,24 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-patch-dl \
     zdharma-continuum/zinit-annex-rust
 
-### End of Zinit's installer chunk
-
 ___MY_VMOPTIONS_SHELL_FILE="${HOME}/.jetbrains.vmoptions.sh"; if [ -f "${___MY_VMOPTIONS_SHELL_FILE}" ]; then . "${___MY_VMOPTIONS_SHELL_FILE}"; fi
 
 # Disable instant prompt error message.
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
 
+# Use iterm2 shell integration if it exists.
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh" || true
+
+if ! where envsubst > /dev/null
+then
+	#echo "Install gettext!"
+fi
+
+source ~/.zsh_functions
+
+if [ -f ~/.zsh_profile ]
+then
+    source ~/.zsh_profile
+fi
+
 

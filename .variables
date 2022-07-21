@@ -22,7 +22,7 @@ esac
 
 if [ $HASMACOS -eq 1 ]
 then
-    export PATH="/opt/homebrew/bin:${PATH}"
+    export PATH="/opt/homebrew/opt/grep/libexec/gnubin:/opt/homebrew/bin:${PATH}"
 fi
 
 export PATH=".:${PATH}"
@@ -32,7 +32,7 @@ export XMODIFIERS="@im=fcitx"
 export LC_CTYPE="zh_CN.UTF-8"
 export ADVANCED_VIM=1
 export EDITOR=nvim
-export PAGER=nvim
+export PAGER='nvim -c "%s/_//g|%s/.//g"'
 
 if [ $HASMSYS -eq 1 ]
 then
