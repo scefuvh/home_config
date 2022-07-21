@@ -280,3 +280,6 @@ zinit light-mode for \
 
 # Disable instant prompt error message.
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh" || true
+
