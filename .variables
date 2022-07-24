@@ -33,6 +33,7 @@ export LC_CTYPE="zh_CN.UTF-8"
 export ADVANCED_VIM=1
 export EDITOR=nvim
 export PAGER=nvim
+export X_VCPKG_ASSET_SOURCES='x-azurl,http://106.15.181.5/'
 
 if [ $HASMSYS -eq 1 ]
 then
